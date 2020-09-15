@@ -23,9 +23,12 @@ var (
 
 	// version number; really just Tag without leading 'v'
 	Version = func() string {
-		if Tag != "" {
+		if Tag == "" {
+			return "0.0.0"
+		}
+		if len(Tag) > 1 && Tag[0] == 'v' && Tag[1] >= '0' && Tag[1] <= '9' {
 			return Tag[1:]
 		}
-		return "0.0.0"
+		return Tag
 	}()
 )
