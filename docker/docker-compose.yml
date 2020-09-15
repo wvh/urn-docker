@@ -1,0 +1,54 @@
+version: "3.5"
+
+services:
+  db:
+    build:
+      context: ../sql
+      #dockerfile: psql/Dockerfile
+    container_name: "${APP_NAME}db"
+    environment:
+      POSTGRES_PASSWORD:
+      PGAPPNAME: $APP_NAME
+      PGDATABASE:
+      PGUSER:
+      PGPASSWORD:
+    command: -c 'shared_buffers=256MB' -c 'max_connections=25'
+    expose:
+      - "5432"
+
+  pgweb:
+    build:
+      context: ./pgweb
+    container_name: pgweb
+    depends_on:
+      - db
+    environment:
+      PGDATABASE:
+      PGUSER:
+      PGPASSWORD:
+      PGAPPNAME: pgweb
+      PGSSLMODE:
+      PGCONNECT_TIMEOUT:
+    expose:
+      - "8432"
+
+  web:
+    build:
+      context: ../
+      dockerfile: docker/web/Dockerfile
+    container_name: "${APP_NAME}web"
+    depends_on:
+      - db
+    environment:
+      PGDATABASE:
+      PGUSER:
+      PGPASSWORD:
+      PGAPPNAME:
+      PGSSLMODE:
+      PGCONNECT_TIMEOUT:
+    expose:
+      - "8080"
+
+networks:
+  default:
+    name: "${APP_NAME}net"

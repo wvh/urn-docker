@@ -1,0 +1,2 @@
+# only check in env files manually
+.env
