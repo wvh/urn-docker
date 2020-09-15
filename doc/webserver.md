@@ -2,7 +2,7 @@
 
 ## configuration
 
-This application mostly follow the [twelve-factor app](https://12factor.net/) guidelines and retrieves its configuration from the environment.
+This application tries to follow the [twelve-factor app](https://12factor.net/) guidelines and retrieves its configuration from the environment.
 
 Container environments use a `.env` file, and also [`systemd` unit files](https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Environment) can use variables and `.env` files with the keywords `Environment` and `EnvironmentFile` respectively.
 
