@@ -44,6 +44,5 @@ ENV \
 	DB=unset \
 	PGAPPNAME=pgweb
 
-EXPOSE 8432
-#ENTRYPOINT /bin/wait-for-it.sh -h db -p 5432 -t 5 -- /bin/pgweb --bind 0.0.0.0 --listen $PORT --ssl disable --host db --user $USER --pass $PASS --db $DB --skip-open
-ENTRYPOINT /bin/wait-for-it.sh -h db -p 5432 -t 5 -- /bin/pgweb --bind 0.0.0.0 --listen $PORT --ssl disable --host db --skip-open
+EXPOSE $PORT
+ENTRYPOINT /bin/wait-for-it.sh -h db -p 5432 -t 5 -- /bin/pgweb --bind 0.0.0.0 --listen $PORT --ssl disable --host db --user $PGUSER --pass $PGPASSWORD --db $PGDATABASE --skip-open
