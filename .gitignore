@@ -1,2 +1,6 @@
 # only check in env files manually
 .env
+
+# ignore binaries
+/bin/*
+!/bin/readme.md
