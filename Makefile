@@ -5,6 +5,9 @@ ROOTDIR := ${CURDIR}
 BINDIR := $(ROOTDIR)/bin
 WEBPORT := 8080
 
+DOCKER_LOGIN := quay.io
+DOCKER_REPO := quay.io/wvh/urn-web
+
 ENVFILE=docker/.env
 DB_CONTAINER=urndb
 NETWORK_NAME=urnnet
@@ -27,7 +30,7 @@ LDFLAGS = -s -w
 ### link in version info
 ifneq ($(wildcard .git/.),)
 HAVE_GIT := true
-LDFLAGS += -X $(VERSION_PACKAGE).CommitHash=$(HASH) -X $(VERSION_PACKAGE).CommitTag=$(TAG) -X $(VERSION_PACKAGE).CommitBranch=$(BRANCH) -X $(VERSION_PACKAGE).CommitRepo=$(REPOLINK)
+LDFLAGS += -X $(VERSION_PACKAGE).Hash=$(HASH) -X $(VERSION_PACKAGE).Tag=$(TAG) -X $(VERSION_PACKAGE).Branch=$(BRANCH) -X $(VERSION_PACKAGE).Repo=$(REPOLINK)
 #$(info found git)
 else
 HAVE_GIT := false
@@ -36,7 +39,7 @@ endif
 
 ### link in version info
 #ifdef $(HASH)
-#	LDFLAGS += "-s -w -X $(VERSION_PACKAGE).CommitHash=$(HASH) -X $(VERSION_PACKAGE).CommitTag=$(TAG) -X $(VERSION_PACKAGE).CommitBranch=$(BRANCH) -X $(VERSION_PACKAGE).CommitRepo=$(REPOLINK)"
+#	LDFLAGS += "-s -w -X $(VERSION_PACKAGE).Hash=$(HASH) -X $(VERSION_PACKAGE).Tag=$(TAG) -X $(VERSION_PACKAGE).Branch=$(BRANCH) -X $(VERSION_PACKAGE).Repo=$(REPOLINK)"
 #endif
 
 ### trim file system paths from executables
@@ -88,7 +91,16 @@ serve: web
 
 .PHONY: docker-build
 docker-build:
-	docker build -t web -f docker/web/Dockerfile .
+	# docker can add multiple tags; :latest is the default when no tag is given
+	docker build -t web -t web:$(TAG) -f docker/web/Dockerfile.cache .
+
+.PHONY: docker-tag
+docker-tag: docker-build
+	docker tag web $(DOCKER_REPO):$(TAG)
+
+.PHONY: docker-push
+docker-push: docker-tag
+	docker push $(DOCKER_REPO)
 
 .PHONY: docker-serve
 docker-serve: docker-build
@@ -100,7 +112,7 @@ docker-cmd: docker-build
 
 .PHONY: dev-up
 dev-up:
-	cd docker && docker-compose up
+	cd docker && TAG=$(TAG) docker-compose up
 
 .PHONY: dev-down
 dev-down:
@@ -124,6 +136,7 @@ help:
 	@echo 'DOCKER'
 	@echo '  make docker-build   build project inside container'
 	@echo '  make docker-serve   serve requests on port $(WEBPORT)'
+	@echo '  make docker-push    push image to remote repo $(DOCKER_REPO)'
 	@echo '  make docker-cmd     run one command'
 	@echo
 	@echo 'DOCKER-COMPOSE'
