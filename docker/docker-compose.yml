@@ -4,7 +4,7 @@ services:
   db:
     build:
       context: ../sql
-      #dockerfile: psql/Dockerfile
+      #dockerfile: psql/Dockerfile.cache
     container_name: "${APP_NAME}db"
     environment:
       POSTGRES_PASSWORD:
@@ -36,6 +36,7 @@ services:
     build:
       context: ../
       dockerfile: docker/web/Dockerfile
+    image: "${APP_NAME}web:${TAG:-latest}"
     container_name: "${APP_NAME}web"
     depends_on:
       - db

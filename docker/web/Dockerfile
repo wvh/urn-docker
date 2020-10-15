@@ -5,12 +5,13 @@ WORKDIR /app
 
 COPY go.mod .
 COPY go.sum .
-RUN GO111MODULE=on go mod download -x
+RUN go mod download -x
 
 COPY . .
-RUN GO111MODULE=on CGO_ENABLED=0 GOOS=linux go build -o=/bin/ ./cmd/...
+#RUN GO111MODULE=on CGO_ENABLED=0 GOOS=linux go build -o=/bin/ ./cmd/...
+RUN GO111MODULE=on CGO_ENABLED=0 make all
 
 FROM scratch
-COPY --from=build /bin/ /bin/
+COPY --from=build /app/bin/ /bin/
 EXPOSE 8080
 ENTRYPOINT ["/bin/web"]
