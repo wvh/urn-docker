@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/wvh/urn/internal/version"
-	"github.com/wvh/urn/pkg/web"
+	"github.com/wvh/urn/pkg/api"
 )
 
 const (
@@ -94,7 +94,7 @@ func run(args []string, env string) error {
 		"state", "starting",
 	)
 
-	api, err := web.NewAPI()
+	api, err := api.New()
 	if err != nil {
 		return fmt.Errorf("%w: %v", errStartup, err)
 	}

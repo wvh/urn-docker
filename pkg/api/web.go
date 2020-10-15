@@ -1,4 +1,4 @@
-package web
+package api
 
 import (
 	"net/http"
@@ -6,7 +6,7 @@ import (
 
 type API struct {}
 
-func NewAPI() (*API, error) {
+func New() (*API, error) {
 	return &API{}, nil
 }
 
