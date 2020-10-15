@@ -3,12 +3,18 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"log"
+	stdlog "log"
 	"net/http"
 	"os"
+	"runtime/debug"
+	//"strconv"
 	"strings"
+	"time"
 
 	"github.com/wvh/urn/internal/version"
+	"github.com/wvh/urn/third_party/mutil"
+
+	log "github.com/go-kit/kit/log"
 )
 
 func handleVersion() http.HandlerFunc {
@@ -53,6 +59,15 @@ func handleVersion() http.HandlerFunc {
 	}
 }
 
+func handleHealth() http.HandlerFunc {
+	ok := []byte("OK")
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write(ok)
+	}
+}
+
 func helloHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("hello"))
 }
@@ -69,6 +84,7 @@ func (c *controller) healthz(w http.ResponseWriter, req *http.Request) {
 }
 */
 
+/*
 func logMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("request: %s %s\n", r.Method, r.URL.Path)
@@ -77,6 +93,7 @@ func logMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+*/
 
 var (
 	errNoHostConfigured = errors.New("I don't serve anything on that hostname")
@@ -95,7 +112,7 @@ func authoritiveHostOnly(hn string, next http.Handler) http.Handler {
 		hn = sys
 	}
 
-	log.Println("only listening for requests on", hn)
+	stdlog.Println("only listening for requests on", hn)
 
 	localIP4 := "127.0.0.1" + ":" + httpPort
 	localIP6 := "[::1]" + ":" + httpPort
@@ -107,10 +124,39 @@ func authoritiveHostOnly(hn string, next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.EqualFold(hn, r.Host) && r.Host != localIP4 && r.Host != localIP6 {
-			log.Printf("bad host: %s\n", r.Host)
+			stdlog.Printf("bad host: %s\n", r.Host)
 			http.Error(w, errNoHostConfigured.Error(), http.StatusBadRequest)
 			return
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// AccessHandler returns a handler that call f after each request.
+func logMiddleware(logger log.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer func() {
+				if err := recover(); err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					logger.Log(
+						"err", err,
+						"trace", debug.Stack(),
+					)
+				}
+			}()
+
+			start := time.Now()
+			ww := mutil.WrapWriter(w)
+			next.ServeHTTP(ww, r)
+			logger.Log(
+				"status", ww.Status(),
+				"written", ww.BytesWritten(),
+				"method", r.Method,
+				"path", r.URL.EscapedPath(),
+				"duration", time.Since(start),
+				//"duration", strconv.FormatFloat(time.Since(start).Seconds(), 'f', -1, 64),
+			)
+		})
+	}
 }

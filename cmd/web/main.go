@@ -21,6 +21,7 @@ const (
 )
 
 var (
+	appName = version.Id + "-" + "web"
 	env = "dev"
 	_isDev = func() bool { return false }()
 )
@@ -87,7 +88,7 @@ var (
 
 func run(args []string, env string) error {
 	// set logger as early as possible
-	logger := makeLogger(os.Stdout, env)
+	logger := makeLogger(os.Stdout, appName, env)
 	logger.Log(
 		"version", version.Version,
 		"env", env,
@@ -102,11 +103,13 @@ func run(args []string, env string) error {
 	router := http.NewServeMux()
 	router.HandleFunc("/", helloHandler)
 	router.HandleFunc("/version", handleVersion())
+	router.HandleFunc("/health", handleHealth())
 	router.Handle("/api", api)
 
 	srv := http.Server{
 		Addr:           ":" + httpPort,
-		Handler:        authoritiveHostOnly(httpHost, logMiddleware(router)),
+		//Handler:        authoritiveHostOnly(httpHost, logMiddleware(sublogger(logger, "request"))(router)),
+		Handler:        logMiddleware(sublogger(logger, "request"))(router),
 		//ErrorLog:       newStdlogAdapter(logger),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
