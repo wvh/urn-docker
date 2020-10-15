@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/wvh/urn/pkg/secmsg"
+	"github.com/wvh/urn/pkg/token"
 )
 
 func main() {
 	fmt.Println("secmsg:", os.Args)
 
-	svc, err := secmsg.NewMessageService([]byte("12345678901234567890123456789012"))
+	svc, err := token.NewTokenService([]byte("12345678901234567890123456789012"))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
