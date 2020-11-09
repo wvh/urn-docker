@@ -3,7 +3,6 @@ name: tests
 jobs:
   test-all:
     env:
-      GOPATH: ${{ github.workspace }}
       GO111MODULE: on
     strategy:
       matrix:
