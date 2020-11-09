@@ -1,9 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
-	"flag"
 
 	"github.com/wvh/urn/internal/version"
 )
@@ -17,7 +17,7 @@ const (
 
 	// configuration environment variables
 	envAPIServer = "URN_API_SERVER"
-	envAPIToken = "URN_API_TOKEN"
+	envAPIToken  = "URN_API_TOKEN"
 )
 
 func run(args []string) error {
@@ -26,8 +26,8 @@ func run(args []string) error {
 
 		//verbose    = flags.Bool("v", false, "verbose logging")
 		//format     = flags.String("f", "Hi %s", "greeting format")
-		apiServer = flags.String("server", os.Getenv(envAPIServer), "API server URL, env: " + envAPIServer)
-		apiToken = flags.String("token", os.Getenv(envAPIToken), "API token, env: " + envAPIToken)
+		apiServer   = flags.String("server", os.Getenv(envAPIServer), "API server URL, env: "+envAPIServer)
+		apiToken    = flags.String("token", os.Getenv(envAPIToken), "API token, env: "+envAPIToken)
 		showVersion = flags.Bool("version", false, "show client version")
 	)
 	if err := flags.Parse(args[1:]); err != nil {

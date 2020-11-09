@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"testing"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"io/ioutil"
+	"testing"
 )
 
 const testToken = "abc123"
@@ -17,7 +17,7 @@ func testCheckHeaders(t *testing.T, r *http.Request) {
 	if r.UserAgent() == "" {
 		t.Errorf("handler: expected UserAgent to be set, got empty string")
 	}
-	if r.Header.Get("Authorization") != tokenAuthScheme + " " + testToken {
+	if r.Header.Get("Authorization") != tokenAuthScheme+" "+testToken {
 		t.Errorf("handler: invalid Authorization header, want: %q, got: %q", testToken, r.Header.Get("Authorization"))
 	}
 }

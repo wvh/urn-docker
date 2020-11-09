@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"net/url"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/wvh/urn/internal/version"
@@ -15,13 +15,13 @@ const (
 )
 
 type API struct {
-	client *http.Client
-	url *url.URL
-	token string
+	httpClient *http.Client
+	baseURL    *url.URL
+	token      string
 
 	// cached header fields
 	authHeader string
-	userAgent string
+	userAgent  string
 }
 
 func NewAPIClient(app, srv, token string) (*API, error) {
@@ -40,18 +40,18 @@ func NewAPIClient(app, srv, token string) (*API, error) {
 	}
 
 	return &API{
-		client: client,
-		url: url,
-		token: token,
+		httpClient: client,
+		baseURL:    url,
+		token:      token,
 		authHeader: tokenAuthScheme + " " + token,
-		userAgent: app + " " + version.Version,
+		userAgent:  app + " " + version.Version,
 	}, nil
 }
 
 // request sets up a basic API request for a given URL path.
 // The request will add hostname and authentication information from the API client.
 func (api *API) request(path string) *http.Request {
-	url, err := api.url.Parse(path)
+	url, err := api.baseURL.Parse(path)
 	if err != nil {
 		panic(err)
 	}
@@ -60,6 +60,7 @@ func (api *API) request(path string) *http.Request {
 	if err != nil {
 		panic(err)
 	}
+	req.Header.Set("Accept", "application/json")
 	req.Header.Add("If-None-Match", `W/"wyzzy"`)
 	req.Header.Add("Authorization", api.authHeader)
 	req.Header.Add("User-Agent", api.userAgent)
@@ -68,5 +69,17 @@ func (api *API) request(path string) *http.Request {
 
 func (api *API) get(url string) (*http.Response, error) {
 	//resp, err := client.Do(req)
-	return api.client.Do(api.request(url))
+	return api.httpClient.Do(api.request(url))
 }
+
+func (api *API) do(req *http.Request, v interface{}) (*http.Response, error) {
+	resp, err := api.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	//	err = json.NewDecoder(resp.Body).Decode(v)
+	return resp, err
+}
+
+func (api *API) Version() {}

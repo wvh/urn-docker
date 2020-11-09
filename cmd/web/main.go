@@ -22,8 +22,8 @@ const (
 
 var (
 	appName = version.Id + "-" + "web"
-	env = "dev"
-	_isDev = func() bool { return false }()
+	env     = "dev"
+	_isDev  = func() bool { return false }()
 )
 
 func start(srv *http.Server) error {
@@ -107,9 +107,9 @@ func run(args []string, env string) error {
 	router.Handle("/api", api)
 
 	srv := http.Server{
-		Addr:           ":" + httpPort,
+		Addr: ":" + httpPort,
 		//Handler:        authoritiveHostOnly(httpHost, logMiddleware(sublogger(logger, "request"))(router)),
-		Handler:        logMiddleware(sublogger(logger, "request"))(router),
+		Handler: logMiddleware(sublogger(logger, "request"))(router),
 		//ErrorLog:       newStdlogAdapter(logger),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,

@@ -26,11 +26,11 @@ func makeLogger(out io.Writer, app, env string) log.Logger {
 	logger = log.With(logger, "time", timeFormat)
 
 	/*
-	wrapper := logger
-	if isDev(env) {
-		wrapper = log.With(logger, "caller", log.Caller(6))
-		logger = log.With(logger, "caller", log.DefaultCaller)
-	}
+		wrapper := logger
+		if isDev(env) {
+			wrapper = log.With(logger, "caller", log.Caller(6))
+			logger = log.With(logger, "caller", log.DefaultCaller)
+		}
 	*/
 	stdwrapper := logAdapter{logger}
 

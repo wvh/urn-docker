@@ -4,7 +4,7 @@ import (
 	"net/http"
 )
 
-type API struct {}
+type API struct{}
 
 func New() (*API, error) {
 	return &API{}, nil
