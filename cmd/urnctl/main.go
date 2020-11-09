@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/wvh/urn/internal/version"
+	"github.com/wvh/urn-harvester/internal/version"
 )
 
 const (

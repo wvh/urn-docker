@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/wvh/urn/internal/version"
+	"github.com/wvh/urn-harvester/internal/version"
 )
 
 const (

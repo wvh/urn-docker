@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wvh/urn/internal/version"
-	"github.com/wvh/urn/third_party/mutil"
+	"github.com/wvh/urn-harvester/internal/version"
+	"github.com/wvh/urn-harvester/third_party/mutil"
 
 	log "github.com/go-kit/kit/log"
 )

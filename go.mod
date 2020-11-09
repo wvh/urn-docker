@@ -1,4 +1,4 @@
-module github.com/wvh/urn
+module github.com/wvh/urn-harvester
 
 go 1.15
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/wvh/urn/pkg/token"
+	"github.com/wvh/urn-harvester/pkg/token"
 )
 
 func main() {

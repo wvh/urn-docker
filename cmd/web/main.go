@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/wvh/urn/internal/version"
-	"github.com/wvh/urn/pkg/api"
+	"github.com/wvh/urn-harvester/internal/version"
+	"github.com/wvh/urn-harvester/pkg/api"
 )
 
 const (
