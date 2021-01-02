@@ -1,9 +1,15 @@
 package interval
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
+	"sync"
 	"testing"
+	"time"
 )
+
+const testTimeFormat = "Mon Jan _2 15:04:05"
 
 // This function allows some input values (like 001:002:003) that would nevertheless be caught by a preceding regexp;
 //
@@ -213,6 +219,307 @@ func TestParseMany(t *testing.T) {
 			}
 			if len(ivals) != 0 {
 				t.Errorf("invalid time spec list should return no intervals, expected: %d, got: %d", 0, len(ivals))
+			}
+		})
+	}
+}
+
+func TestIntervalNext(t *testing.T) {
+	// reference time is 2009-11-10 23:00:00 +0000 UTC / 2009-11-11 01:00:00 +0200 EET;
+	// 2009-11-10 is a Tuesday.
+	// time.Date(2009, 11, 10, 23, 0, 0, 0, time.UTC)
+	nowFunc := func() time.Time { return time.Unix(1257894000, 0) }
+	now := nowFunc()
+	tests := []struct {
+		interval *Interval
+		t        time.Time
+	}{
+		{
+			// time is future
+			interval: &Interval{
+				Weekday: weekday(0),
+				H:       12,
+				M:       12,
+				S:       0,
+				Tag:     "",
+				now:     nowFunc,
+			},
+			t: time.Date(2009, 11, 11, 12, 12, 0, 0, now.Location()),
+		},
+		{
+			// time is passed
+			interval: &Interval{
+				Weekday: weekday(0),
+				H:       0,
+				M:       15,
+				S:       15,
+				Tag:     "",
+				now:     nowFunc,
+			},
+			t: time.Date(2009, 11, 12, 0, 15, 15, 0, now.Location()),
+		},
+		{
+			// weekday is future
+			interval: &Interval{
+				Weekday: weekday(time.Wednesday),
+				H:       12,
+				M:       12,
+				S:       0,
+				Tag:     "",
+				now:     nowFunc,
+			},
+			t: time.Date(2009, 11, 11, 12, 12, 0, 0, now.Location()),
+		},
+		{
+			// weekday is past
+			interval: &Interval{
+				Weekday: weekday(time.Tuesday),
+				H:       0,
+				M:       15,
+				S:       15,
+				Tag:     "",
+				now:     nowFunc,
+			},
+			t: time.Date(2009, 11, 17, 0, 15, 15, 0, now.Location()),
+		},
+		{
+			// time is past and weekday is past
+			interval: &Interval{
+				Weekday: weekday(time.Wednesday),
+				H:       0,
+				M:       15,
+				S:       15,
+				Tag:     "",
+				now:     nowFunc,
+			},
+			t: time.Date(2009, 11, 18, 0, 15, 15, 0, now.Location()),
+		},
+	}
+
+	t.Log("reference time is", now.UTC())
+
+	for _, test := range tests {
+		t.Run(test.interval.String(), func(t *testing.T) {
+			next := test.interval.Next()
+			//t.Logf("%s --> %s", test.interval.String(), next.Format("Mon Jan _2 15:04:05"))
+			if !next.Equal(test.t) {
+				t.Errorf("wrong next time, want: %v, got: %v", test.t.Format(testTimeFormat), next.Format(testTimeFormat))
+			}
+		})
+	}
+}
+
+func TestIntervalsNext(t *testing.T) {
+	nowFunc := func() time.Time { return time.Unix(1257894000, 0) }
+	now := nowFunc()
+	tests := []struct {
+		intervals Intervals
+		t         time.Time
+	}{
+		{
+			intervals: Intervals{
+				// time is future
+				&Interval{
+					Weekday: weekday(0),
+					H:       12,
+					M:       12,
+					S:       0,
+					Tag:     "",
+					now:     nowFunc,
+				},
+				// time is passed
+				&Interval{
+					Weekday: weekday(0),
+					H:       0,
+					M:       15,
+					S:       15,
+					Tag:     "",
+					now:     nowFunc,
+				},
+				// weekday is future
+				&Interval{
+					Weekday: weekday(time.Wednesday),
+					H:       12,
+					M:       12,
+					S:       0,
+					Tag:     "",
+					now:     nowFunc,
+				},
+				// weekday is past
+				&Interval{
+					Weekday: weekday(time.Tuesday),
+					H:       0,
+					M:       15,
+					S:       15,
+					Tag:     "",
+					now:     nowFunc,
+				},
+				// time is past and weekday is past
+				&Interval{
+					Weekday: weekday(time.Wednesday),
+					H:       0,
+					M:       15,
+					S:       15,
+					Tag:     "",
+					now:     nowFunc,
+				},
+			},
+			t: time.Date(2009, 11, 11, 12, 12, 0, 0, now.Location()),
+		},
+		{
+			intervals: Intervals{
+				// time and weekday are upcoming (Friday, yay)
+				&Interval{
+					Weekday: weekday(time.Friday),
+					H:       16,
+					M:       00,
+					S:       00,
+					Tag:     "",
+					now:     nowFunc,
+				},
+			},
+			t: time.Date(2009, 11, 13, 16, 0, 0, 0, now.Location()),
+		},
+		{
+			intervals: Intervals{},
+			t:         time.Time{},
+		},
+	}
+
+	for _, test := range tests {
+		//t.Run(test.t.Format(testTimeFormat), func(t *testing.T) {
+		t.Run(test.intervals.String(), func(t *testing.T) {
+			t.Logf("%+v", test.intervals)
+			next := test.intervals.Next()
+			if !next.Equal(test.t) {
+				t.Errorf("wrong next time, want: %v, got: %v", test.t.Format(testTimeFormat), next.Format(testTimeFormat))
+			}
+		})
+	}
+}
+
+// Fastest way to create a string representation from a list... out of curiosity.
+func BenchmarkStringer(b *testing.B) {
+	var (
+		once     sync.Once
+		memoised string
+	)
+
+	nowFunc := time.Now
+	intervals := Intervals{
+		// time is future
+		&Interval{
+			Weekday: weekday(0),
+			H:       12,
+			M:       12,
+			S:       0,
+			Tag:     "",
+			now:     nowFunc,
+		},
+		// time is passed
+		&Interval{
+			Weekday: weekday(0),
+			H:       0,
+			M:       15,
+			S:       15,
+			Tag:     "",
+			now:     nowFunc,
+		},
+		// weekday is future
+		&Interval{
+			Weekday: weekday(time.Wednesday),
+			H:       12,
+			M:       12,
+			S:       0,
+			Tag:     "",
+			now:     nowFunc,
+		},
+		// weekday is past
+		&Interval{
+			Weekday: weekday(time.Tuesday),
+			H:       0,
+			M:       15,
+			S:       15,
+			Tag:     "",
+			now:     nowFunc,
+		},
+		// time is past and weekday is past
+		&Interval{
+			Weekday: weekday(time.Wednesday),
+			H:       0,
+			M:       15,
+			S:       15,
+			Tag:     "",
+			now:     nowFunc,
+		},
+	}
+
+	tests := []struct {
+		name string
+		f    func() string
+	}{
+		{
+			name: "strings.Join",
+			f: func() string {
+				out := make([]string, len(intervals))
+				for i, v := range intervals {
+					out[i] = v.String()
+				}
+				return "[" + strings.Join(out, " ") + "]"
+			},
+		},
+		{
+			name: "strings.Join (append)",
+			f: func() string {
+				out := make([]string, 0, len(intervals))
+				for _, v := range intervals {
+					out = append(out, v.String())
+				}
+				return "[" + strings.Join(out, " ") + "]"
+			},
+		},
+		{
+			name: "sync.Once",
+			f: func() string {
+				once.Do(func() {
+					out := make([]string, len(intervals))
+					for i, v := range intervals {
+						out[i] = v.String()
+					}
+					memoised = "[" + strings.Join(out, " ") + "]"
+				})
+				return memoised
+			},
+		},
+		{
+			name: "cast",
+			f: func() string {
+				return fmt.Sprintf("%+v", []*Interval(intervals))
+			},
+		},
+		{
+			name: "strings.Builder",
+			f: func() string {
+				var s strings.Builder
+				s.WriteByte('[')
+				for i, v := range intervals {
+					if i > 0 {
+						s.WriteByte(' ')
+					}
+					s.WriteString(v.String())
+				}
+				s.WriteByte(']')
+				return s.String()
+			},
+		},
+	}
+
+	b.Log(intervals)
+
+	for _, test := range tests {
+		b.Run(test.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				_ = test.f()
 			}
 		})
 	}

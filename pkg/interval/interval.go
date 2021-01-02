@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type weekday int
@@ -49,6 +50,8 @@ type Interval struct {
 	M       int
 	S       int
 	Tag     string
+
+	now func() time.Time
 }
 
 // String gives a string representation of a time interval.
@@ -57,6 +60,33 @@ func (ival *Interval) String() string {
 		return fmt.Sprintf("%s@%02d:%02d %s", weekdays[ival.Weekday], ival.H, ival.M, ival.Tag)
 	}
 	return fmt.Sprintf("%s@%02d:%02d", weekdays[ival.Weekday], ival.H, ival.M)
+}
+
+// Next calculates the next concrete time for the time interval spec.
+func (ival *Interval) Next() time.Time {
+	granularity := 1
+	now := ival.now()
+	y, m, d := now.Date()
+	next := time.Date(y, m, d, ival.H, ival.M, ival.S, 0, now.Location())
+
+	// have weekday
+	if ival.Weekday != 0 {
+		granularity = 7
+
+		days := int(ival.Weekday) - int(now.Weekday())
+		if days < 0 {
+			days += 7
+		}
+		if days != 0 {
+			next = next.AddDate(0, 0, days)
+		}
+	}
+
+	if next.Before(now) {
+		return next.AddDate(0, 0, granularity)
+	}
+
+	return next
 }
 
 // Parser holds configuration fields for the time spec parser.
@@ -130,6 +160,39 @@ func (parser *Parser) Parse(str string) (*Interval, error) {
 		S:       s,
 		Tag:     matches[3],
 	}, nil
+}
+
+// Intervals is a list of intervals.
+type Intervals []*Interval
+
+// Next returns the nearest concrete time over a list of intervals.
+// If the list is empty, the zero time is returned.
+func (ivals Intervals) Next() time.Time {
+	var min time.Time
+
+	if len(ivals) == 0 {
+		return min
+	}
+
+	if len(ivals) == 1 {
+		return ivals[0].Next()
+	}
+
+	for i, ival := range ivals {
+		t := ival.Next()
+		if t.Before(min) || i == 0 {
+			min = t
+		}
+	}
+	return min
+}
+
+func (ivals Intervals) String() string {
+	out := make([]string, len(ivals))
+	for i, v := range ivals {
+		out[i] = v.String()
+	}
+	return "[" + strings.Join(out, " ") + "]"
 }
 
 // ParseMany takes a comma-separated list of time specs and calls Parse on each of them.
