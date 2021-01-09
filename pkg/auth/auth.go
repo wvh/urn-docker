@@ -6,7 +6,10 @@ import (
 	"strings"
 )
 
-const headerTokenType = "apiv1"
+const (
+	headerTokenType   = "apiv1"
+	headerTokenPrefix = headerTokenType + " "
+)
 
 var (
 	// ErrInvalidAuthPolicy means the auth policy could not be parsed from string.
@@ -43,10 +46,11 @@ func (policy authPolicy) String() string {
 // Handler blah blah.
 type Handler struct {
 	policy authPolicy
+	onUser func(string)
 }
 
 // NewHandler creates an authorization handler from the provided policy constant.
-func NewHandler(policy authPolicy) func(http.Handler) http.Handler {
+func NewHandler(policy authPolicy, opts ...func(*Handler)) func(http.Handler) http.Handler {
 	/*
 		return &Handler{
 			policy: policy,
@@ -54,6 +58,10 @@ func NewHandler(policy authPolicy) func(http.Handler) http.Handler {
 	*/
 	h := &Handler{
 		policy: policy,
+	}
+
+	for _, opt := range opts {
+		opt(h)
 	}
 
 	switch policy {
@@ -107,11 +115,14 @@ func fromString(s string) (authPolicy, error) {
 // parse token from request header
 func (h *Handler) userFromRequest(r *http.Request) string {
 	hdr := r.Header.Get("Authorization")
-	if !strings.HasPrefix(hdr, headerTokenType) {
+	if !strings.HasPrefix(hdr, headerTokenPrefix) {
 		return ""
 	}
 
-	user := parseToken(hdr[len(headerTokenType):])
+	user := parseToken(hdr[len(headerTokenPrefix):])
+	if h.onUser != nil {
+		h.onUser(user)
+	}
 	return user
 }
 
@@ -162,4 +173,12 @@ func (h *Handler) forbidden(w http.ResponseWriter, r *http.Request) {
 
 func parseToken(token string) string {
 	return token
+}
+
+// OnUser allows passing a callback function executed when a valid token is found in the request.
+// The callback function will receive the user id as a string argument.
+func OnUser(f func(string)) func(*Handler) {
+	return func(h *Handler) {
+		h.onUser = f
+	}
 }

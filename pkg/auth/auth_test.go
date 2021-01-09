@@ -117,6 +117,40 @@ func TestAuth(t *testing.T) {
 	}
 }
 
+func TestOnUserCallback(t *testing.T) {
+	token := "abc123"
+
+	var (
+		called bool
+		cbUser string
+	)
+
+	onUserFunc := func(u string) {
+		called = true
+		cbUser = u
+	}
+	handler := NewHandler(Pass, OnUser(onUserFunc))(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+
+	req := httptest.NewRequest(http.MethodGet, "http://example.com/api/meh", nil)
+	req.Header.Add("Authorization", headerTokenType+" "+token)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	res := w.Result()
+
+	if res.StatusCode != 200 {
+		t.Errorf("response has wrong status code, want: %d, got: %d", 200, res.StatusCode)
+	}
+
+	if !called {
+		t.Error("callback function was not called")
+	}
+
+	if cbUser != token {
+		t.Errorf("callback got passed wrong value, want: %q, got: %q", token, cbUser)
+	}
+}
+
 func TestParseToken(t *testing.T) {
 	tokenFunc := parseToken
 	tokens := []struct {
