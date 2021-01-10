@@ -213,7 +213,6 @@ func TestParseMany(t *testing.T) {
 	for in := range failTests {
 		t.Run(in, func(t *testing.T) {
 			ivals, err := parser.ParseMany(in)
-			t.Log(err)
 			if err == nil {
 				t.Errorf("test should fail for time specs %q, but passed", in)
 			}
