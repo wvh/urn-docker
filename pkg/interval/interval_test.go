@@ -189,7 +189,7 @@ func TestParseMany(t *testing.T) {
 		",mon@23:59,12:34 goodtag":   {},
 	}
 
-	t.Logf("%+v", passTests)
+	//t.Logf("%+v", passTests)
 	parser, _ := NewParser("goodtag")
 
 	for in, res := range passTests {
@@ -227,8 +227,10 @@ func TestIntervalNext(t *testing.T) {
 	// reference time is 2009-11-10 23:00:00 +0000 UTC / 2009-11-11 01:00:00 +0200 EET;
 	// 2009-11-10 is a Tuesday.
 	// time.Date(2009, 11, 10, 23, 0, 0, 0, time.UTC)
-	nowFunc := func() time.Time { return time.Unix(1257894000, 0) }
+	loc := time.FixedZone("UTC+2", 2*60*60) // enforce UTC+2 so tests don't fail on systems with different timezone configurations
+	nowFunc := func() time.Time { return time.Unix(1257894000, 0).In(loc) }
 	now := nowFunc()
+	
 	tests := []struct {
 		interval *Interval
 		t        time.Time
@@ -309,7 +311,8 @@ func TestIntervalNext(t *testing.T) {
 }
 
 func TestIntervalsNext(t *testing.T) {
-	nowFunc := func() time.Time { return time.Unix(1257894000, 0) }
+	loc := time.FixedZone("UTC+2", 2*60*60) // enforce UTC+2 so tests don't fail on systems with different timezone configurations
+	nowFunc := func() time.Time { return time.Unix(1257894000, 0).In(loc) }
 	now := nowFunc()
 	tests := []struct {
 		intervals Intervals
@@ -388,7 +391,7 @@ func TestIntervalsNext(t *testing.T) {
 	for _, test := range tests {
 		//t.Run(test.t.Format(testTimeFormat), func(t *testing.T) {
 		t.Run(test.intervals.String(), func(t *testing.T) {
-			t.Logf("%+v", test.intervals)
+			//t.Logf("%+v", test.intervals)
 			next := test.intervals.Next()
 			if !next.Equal(test.t) {
 				t.Errorf("wrong next time, want: %v, got: %v", test.t.Format(testTimeFormat), next.Format(testTimeFormat))
